@@ -50,27 +50,48 @@ export default function AlarmsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingAlarm, setEditingAlarm] = useState<Alarm | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(now.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
-      }));
-      setCurrentDate(now.toLocaleDateString('en-US', { 
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric'
-      }));
-    };
+useEffect(() => {
+  setMounted(true);
 
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
+  const audio = new Audio('/alarm.mp3'); // place a file in `public/alarm.mp3`
+
+  const updateTime = () => {
+    const now = new Date();
+    const formattedTime = now.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+
+    const formattedDate = now.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    setCurrentTime(formattedTime);
+    setCurrentDate(formattedDate);
+
+    // Check active alarms
+    alarms.forEach(alarm => {
+      if (
+        alarm.isActive &&
+        alarm.time === formattedTime &&
+        alarm.repeatDays.includes(now.toLocaleDateString('en-US', { weekday: 'short' }))
+      ) {
+        audio.play().catch(err => {
+          console.warn('Audio play failed:', err);
+        });
+      }
+    });
+  };
+
+  updateTime();
+  const interval = setInterval(updateTime, 1000); // Check every second
+
+  return () => clearInterval(interval);
+}, [alarms]);
+
 
   const toggleAlarm = (id: string) => {
     setAlarms(alarms.map(alarm => 
